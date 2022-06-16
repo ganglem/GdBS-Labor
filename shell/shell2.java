@@ -1,12 +1,10 @@
-
-//package shell;
 import static cTools.KernelWrapper.*;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
 
-class hello {
+class shell2 {
 
 	final static int fd_in = 0;
 	final static int fd_out = 1;
@@ -15,8 +13,10 @@ class hello {
 	}
 
 	public static void main(String[] args) throws Exception {
+
+	
 		while (true) {
-			System.out.print("gib was ein: ");
+			System.out.print("shell>");
 			BufferedReader bufReader = new BufferedReader(new InputStreamReader(System.in));
 			String[] kette = bufReader.readLine().split("\\|\\s+");
 
@@ -35,7 +35,7 @@ class hello {
 				boolean error = false;
 
 				if (kette[0].equals("exit")) {
-					System.out.println("bye for now!");
+					System.out.println("Bye!");
 					exit(0);
 				}
 
@@ -72,6 +72,7 @@ class hello {
 				}
 				// ende stdin umlenken
 
+				// stdout umlenken
 				String path3 = null;
 				for (int i = 0; i < input.length; i++) {
 					if (input[i].equals(">")) {
@@ -89,7 +90,7 @@ class hello {
 						input = buffer2;
 					}
 				}
-				// Ende stdout umlenken
+				// ende stdout umlenken
 
 				// Aufgabe 2:
 				String path = null;
@@ -110,8 +111,12 @@ class hello {
 					}
 				} // Ende Aufgabe 2;
 
+				//AUFGABE 2 CONCAT &&
+
+
+
 				if (path == null) {
-					System.err.println("Kein ausführbares Programm gefunden!");
+					System.err.println("ERROR: No executable program found");
 					error = true;
 				} else {
 					if (j < kette.length - 1) { // also noch vor letztem
@@ -140,7 +145,7 @@ class hello {
 							// welchem weitere
 							// Parameter uebbergeben werden koennen
 						} else if (child_pid == -1) {
-							System.err.println("Starten der Anwendung fehlgeschlagen");
+							System.err.println("ERROR: Error while starting the program");
 							error = true;
 						} else { // Elternprozess
 							int[] status = new int[1];
@@ -183,7 +188,7 @@ class hello {
 			// ersetzt den Kindprozess durch ein Programm, welchem weitere
 			// Parameter uebbergeben werden koennen
 		} else if (child_pid == -1) { // Fehler
-			System.err.println("Starten der Anwendung fehlgeschlagen");
+			System.err.println("ERROR: Error while starting the program");
 			return true;
 		}
 		return false;
