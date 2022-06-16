@@ -9,7 +9,7 @@ class shell2 {
 	final static int fd_in = 0;
 	final static int fd_out = 1;
 
-	public hello() {
+	public shell2() {
 	}
 
 	public static void main(String[] args) throws Exception {
