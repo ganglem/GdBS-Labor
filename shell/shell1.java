@@ -21,10 +21,10 @@ class shell1 {
 			int[] pip_fd = {STDIN_FILENO, STDOUT_FILENO};
 			if(pipe_count > 0){
 				if(pipe(pip_fd)<0)
-					System.err.println("Pipe failed");
+					System.err.println("ERROR: Pipe failed");
 				pipe_count--;
 			}
-			System.err.println("Created Pipe: " + pip_fd[0] + " " + pip_fd[1] + " New stdin " + new_stdin);
+			//System.err.println("Created Pipe: " + pip_fd[0] + " " + pip_fd[1] + " New stdin " + new_stdin);
 			
 			for(String[] comm : pipes){	
 				/*
@@ -110,13 +110,10 @@ class shell1 {
 
 	static String[][][] splitInput() {
 		Scanner in = new Scanner(System.in);
-		System.out.print("$");
+		System.out.print("shell> ");
 		String input = in.nextLine();
 
-
-
 		String[] pip_sep = input.split(" \\| ");
-
 
 		String[][] sep_input = new String[pip_sep.length][]; 
 		for(int i = 0; i<pip_sep.length; i++){
@@ -148,7 +145,6 @@ class shell1 {
 		int[] status = new int[1];
 		int pid_child;
 
-
 		if((pid_child = fork())<0){
 			System.err.println("Error: fork");
 			exit(1);
@@ -163,14 +159,14 @@ class shell1 {
 				close(new_stdout);
 				dup2(new_stdin, STDIN_FILENO);
 				close(new_stdin);
-				System.err.println("Set Pipe for Read");
+				//System.err.println("Set Pipe for Read");
 
 			}
 			
 			//Code fuer Umlekung mit <, >
 			if(fout != null || fin != null){
 				if(redirect_output(fout,fin)!=0){
-					System.err.println("Error redirecting output");
+					System.err.println("ERROR: Error redirecting output");
 					return 1;
 				}
 			}
@@ -180,12 +176,12 @@ class shell1 {
 				close(pip_fd[0]);
 				dup2(pip_fd[1], STDOUT_FILENO);
 				close(pip_fd[1]);
-				System.err.println("Set Pipe for Write");
+				//System.err.println("Set Pipe for Write");
 			}
 
 			//Execv
 			if(execv(split_input[0],split_input)<0){
-				System.err.println("Error: execv");
+				System.err.println("ERROR: execv");
 				exit(1);
 			}
 		}
@@ -197,11 +193,11 @@ class shell1 {
 			}
 		
 			if(waitpid(pid_child,status,0)<0){
-				System.err.println("Error: waiting for child");
+				System.err.println("ERROR: waiting for child");
 				exit(1);
 			}
 			if(status[0] != 0){
-				System.err.println("Status: Child returned error code");
+				System.err.println("LOG: Child returned error code");
 				return 1;
 			}
 		}	
