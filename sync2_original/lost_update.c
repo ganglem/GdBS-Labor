@@ -7,8 +7,6 @@
 #define A_BIG_NUMBER 500000
 #define WORKERS 3
 
-//ek, mm
-
 //-----------------------------------------------------------------------------
 // alle globalen variablen fuer die beiden worker hier definieren,
 // alle unbedingt mit "volatile" !!!
@@ -18,7 +16,7 @@ volatile int global_var=0;
 
 // semaphore deklariert man hier z.B. wie folgt:
 //   semaphore mein_semaphor;
-volatile semaphore mein_semaphor;
+
 //-----------------------------------------------------------------------------
 // bevor der test beginnt wird test_setup() einmal aufgerufen
 // - die variablen  readers  bzw.  writers  muessen gesetzt werden: wieviele
@@ -32,7 +30,6 @@ void test_setup(void) {
   writers=WORKERS;
   // initialisieren von sempahoren hier z.B. wie folgt:
   //   mein_semaphor = sem_init( ...irgend eine zahl hier ... );
-  mein_semaphor = sem_init(1);
 }
 
 //-----------------------------------------------------------------------------
@@ -65,10 +62,7 @@ void writer(long my_id) {
   int i;
   for (i=0; i<A_BIG_NUMBER; i++) {
     for (int x=0; x<888; x++); // "lange Rechnung"
-    // kritischer pfad:
-    sem_p(mein_semaphor);
     global_var += 1;
-    sem_v(mein_semaphor);
     // printf("Worker1: %i\n", global_var);
   }
 }
