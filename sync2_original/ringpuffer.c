@@ -63,7 +63,7 @@ void test_setup(void) {
   ringpuffer.lese_index=0;
 
   readers=1; // maximal 1 (nicht veraendern!)
-  writers=1; // maximal 19 
+  writers=2; // maximal 19 
 
   counter=0;
 
@@ -125,6 +125,7 @@ void reader(long my_id) {
     // zaehlt die gelesenen zeichen
     counter++;
     
+
     // busy wait:
     while (ringpuffer.schreib_index==ringpuffer.lese_index) {
        //do nothing
