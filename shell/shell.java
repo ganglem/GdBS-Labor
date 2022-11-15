@@ -3,44 +3,47 @@ import java.util.Scanner;
 import java.io.File;
 import java.util.Arrays;
 
+// I guess 
+// DAS HIER ABGEBEN
+// aber ich weiß
+
 class shell {
   public static void main(String[] args) {
 	  
-	//String env = System.getenv("PATH");
-	//String[] path = env.split(":");
+	String env = System.getenv("PATH");
+	String[] path = env.split(":");
 	
 	 while(true){
 		// code is being split into pipes, concats and commands
 		// [pipes][commands][parameter]
 		String[][][] input = splitInput();
 
-		//int pipe_count = input.length;
+		int pipe_count = input.length-1;
 		int new_stdin = STDIN_FILENO;
 		int new_stdout = STDOUT_FILENO;
 		
 		for(String[][] pipes : input){
 
 			int[] pip_fd = {STDIN_FILENO, STDOUT_FILENO};
-
-			//TODO this might work
-			//if(pipe_count >= 0){
+			if(pipe_count > 0){
 				if(pipe(pip_fd)<0)
 					System.err.println("ERROR: Pipe failed");
-				//pipe_count--;
-			//}
+				pipe_count--;
+			}
+			//System.err.println("Created Pipe: " + pip_fd[0] + " " + pip_fd[1] + " New stdin " + new_stdin);
 			
-			//one dimension lower
-			//look at commands stored in the pipe
 			for(String[] comm : pipes){	
-			
-				//return_valid_path(comm,path);	
+				/*
+				for(String s : comm)
+					System.err.println(s);
+					*/
+				return_valid_path(comm,path);	
 				String[][] files = parse_redirect(comm);
 					
 				if(create_proc(files[0],files[1][0],files[2][0],pip_fd,new_stdin,new_stdout) != 0){
 					break;
 				}
 			}
-
 			new_stdin = pip_fd[0];
 			new_stdout = pip_fd[1];
 		}	
@@ -48,14 +51,14 @@ class shell {
 
   }	//return String[][] (param,fin,fout)
   
-	static String[][] parse_redirect(String[] commands){
+	static String[][] parse_redirect(String[] arr){
 		int i;
 		int index_out=0;
 		int index_in=0;
-		for(i = 0; i < commands.length; i++){
-			if(commands[i].equals(">"))
+		for(i=0; i<arr.length; i++){
+			if(arr[i].equals(">"))
 				index_out = i;
-			else if(commands[i].equals("<"))
+			else if(arr[i].equals("<"))
 				index_in = i;
 		}
 		String[][] ret = new String[3][i];
@@ -63,49 +66,47 @@ class shell {
 		ret[2][0] = null;
 
 		if(index_out!=0){
-			ret[2][0] = commands[index_out+1];
+			ret[2][0] = arr[index_out+1];
 		}
 		if(index_in!=0){
-			ret[1][0] = commands[index_in+1];	
+			ret[1][0] = arr[index_in+1];	
 		}
 
 		if(index_out > index_in){
 			if(index_in != 0)
-				ret[0] = Arrays.copyOfRange(commands, 0, index_in);
+				ret[0] = Arrays.copyOfRange(arr,0,index_in);
 			else
-				ret[0] = Arrays.copyOfRange(commands, 0, index_out);
+				ret[0] = Arrays.copyOfRange(arr,0,index_out);
 		}else if(index_out < index_in){
 			if(index_out != 0)
-				ret[0] = Arrays.copyOfRange(commands, 0, index_out);
+				ret[0] = Arrays.copyOfRange(arr,0,index_out);
 			else
-				ret[0] = Arrays.copyOfRange(commands, 0, index_in);
+				ret[0] = Arrays.copyOfRange(arr,0,index_in);
 		}else 
-			ret[0] = commands;
+			ret[0] = arr;
 		
 		return ret;
 	}
 
   	static int redirect_output(String fout,String fin){
-
-		int fd;
 		//case redirect stdout
 		if(fout != null){
 			//close stdout and open file in arr[i+1]
 			close(STDOUT_FILENO); // 1 = stdout
-			//int fd;
+			int fd;
 			if((fd=open(fout,O_WRONLY | O_CREAT))<0)
 				return -1;
 		}
 		if(fin != null){
 			close(STDIN_FILENO);
-			//int fd;
+			int fd;
 			if((fd=open(fin,O_RDONLY))<0)
 				return -1;
 		}
 		return 0;
 	}	
 
-  /* 	static void return_valid_path(String[] arr,String[] env){
+  	static void return_valid_path(String[] arr,String[] env){
 		for(String s : env){
 			File tmp = new File(s +"/"+ arr[0]);
 			if(tmp.exists()){
@@ -113,7 +114,7 @@ class shell {
 				break;
 			}
 		}
-	} */
+	}
 
 	static String[][][] splitInput() {
 		Scanner in = new Scanner(System.in);

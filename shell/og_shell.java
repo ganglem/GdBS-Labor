@@ -4,7 +4,9 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
 
-class shell2 {
+// OG shell code
+
+class og_shell {
 
 	final static int fd_in = 0;
 	final static int fd_out = 1;
