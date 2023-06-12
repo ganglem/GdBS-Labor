@@ -3,193 +3,112 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
-#include <errno.h>
+#include <time.h>
 
-#define NUMBERS_CREATED_PER_WRITER 5000
-
-semaphore writer_semaphore;
-semaphore reader_semaphore;
-semaphore mutex_semaphore;
-
-//----------- animation (nicht aufgabenrelevant) ----------------------------
-
-/*
-  Aufagbe 2
-  - Es gibt nur einen Reader und einen Writer. Bei mehreren Writern gäbe es eine Überlappung und es wäre keine Speicherung möglich
-  - Bei nur einem Writer funktioniert das noch mit einem Busy Wait, weil bei Erfüllung der Bedingung lediglich ein Writer schreibt,
-    bei mehreren passiert es, dass meherer Writer gleichzeitig die Bedingung erfüllt bekommen und parallel in den Speicher schreiben.
-*/
-
-void start_animation(void)
-{
-  printf("\e[64;1H");
-  int n = (65 + writers) / writers;
-  char dots[67] = "...................................................................";
-  for (int i = 0; i < writers; i++)
-    printf("writer %2i: [%.*s]\n", i, n, dots);
-  printf("reader   : [%.*s]\n", 66, dots);
-}
-
-void show_animation(int i_am_a_writer, int my_id, int value)
-{
-  printf("\e[%i;%iH#", (63 - writers) + (i_am_a_writer ? my_id : writers),
-         13 + value * 66 / (NUMBERS_CREATED_PER_WRITER * writers));
-  fflush(stdout);
-}
-
-void stop_animation(void)
-{
-  printf("\e[64;1H");
-}
-
-// ----------- ende animation -------------------------------------------------
+// AUFGABENSTELLUNG:
+// Bringen Sie diese Programm mittels Semaphoren in Ordnung.
 
 //-----------------------------------------------------------------------------
 // alle globalen variablen fuer die beiden worker hier definieren,
 // alle unbedingt mit "volatile" !!!
 //-----------------------------------------------------------------------------
 
-// der ringpuffer:
-
-#define SIZE 5
-
-volatile struct RINGPUFFER
-{
-  int feld[SIZE];    // wenn (schreib_index == lese_index) dann enthaelt
-  int schreib_index; // feld[] keine daten. Sonst sind feld[lese_index]
-  int lese_index;    // bis feld[(schreib_index - 1) mod SIZE] gueltig
-} ringpuffer;
-
-// variablen zur fehlererkennung/animation:
-int counter;
-int sum;
+volatile int staebchen[5]={1,1,1,1,1};
+volatile int have_one[5]={0,0,0,0,0}; // nur zur deadlock erkennung
 
 //-----------------------------------------------------------------------------
 // bevor der test beginnt wird test_setup() einmal aufgerufen
 //-----------------------------------------------------------------------------
 
-void test_setup(void)
-{
+void test_setup(void) {
   printf("Test Setup\n");
-
-  // ringpuffer initialisieren: leer!
-  ringpuffer.schreib_index = 0;
-  ringpuffer.lese_index = 0;
-
-  readers = 1;  // maximal 1 (nicht veraendern!)
-  writers = 10; // maximal 19
-
-  counter = 0;
-
-  writer_semaphore = sem_init(1);
-  reader_semaphore = sem_init(0);
-  mutex_semaphore = sem_init(1);
-
-  // zur Fehlererkennung
-  sum = 0;
-
-  // dient der Visualisierung
-  start_animation();
+  readers=0;
+  writers=5;
+  srandom(time(NULL));
 }
 
 //-----------------------------------------------------------------------------
 // wenn beider worker fertig sind wird test_end() noch aufgerufen
 //-----------------------------------------------------------------------------
 
-void test_end(void)
-{
-  stop_animation();
-
-  // testauswertung
-  int expect = writers * ((NUMBERS_CREATED_PER_WRITER * NUMBERS_CREATED_PER_WRITER) + NUMBERS_CREATED_PER_WRITER) / 2;
-
-  printf("Erwartete Summe=%i, erhalten=%i: ", expect, sum);
-  if (expect == sum)
-  {
-    printf("Test ok\n");
-  }
-  else
-  {
-    printf("Fehler!\n");
-  }
+void test_end(void) {
+  printf("Test End\n");
 }
 
 //-----------------------------------------------------------------------------
 // die beiden worker laufen parallel:
 //-----------------------------------------------------------------------------
 
-void writer(long my_id)
-{
-  int i;
-  for (i = 1; i <= NUMBERS_CREATED_PER_WRITER; i++)
-  {
+void reader(long my_id) {
+  printf("Wer hat mich da aufgerufen?\n");
+  exit(1);
+}
 
-    /*
-    // busy wait:
-    while ((ringpuffer.schreib_index + 1) % SIZE == ringpuffer.lese_index)
-    {
-      // do nothing
-    }
-    */
 
-    // Schreibzugriff für andere Writer sperren
-    sem_p(writer_semaphore);
-
-    sem_p(mutex_semaphore);
-    ringpuffer.feld[ringpuffer.schreib_index] = i;
-    ringpuffer.schreib_index = (ringpuffer.schreib_index + 1) % SIZE;
-    sem_v(mutex_semaphore);
-    
-    // Lesezugriff für den Reader freigeben
-    sem_v(reader_semaphore);
-
-    show_animation(1, my_id, i);
+int staebchen_nehmen(int my_id, int pos) {
+  int n=staebchen[pos];
+  if (n==1) {
+    printf("%i nimmt %i\n", my_id, pos);
+    staebchen[pos]--; // ergibt 0, gibt aber chance zur fehlererkennung
+    return 1;
+  } else if (n==0) {
+    return 0;
+  } else {
+    printf("Fehler: staebchen[%i]=%i\n", pos, n);
+    exit(1);
   }
 }
 
-void reader(long my_id)
-{
-  // es darf nur einen leser geben
-  if (my_id > 0)
-  {
-    printf("\nFEHLER: readers>1!\n");
+void staebchen_weglegen(int my_id, int pos) {
+  printf("%i legt %i weg\n", my_id, pos);
+  if (staebchen[pos]!=0) {
+    printf("Fehler: staebchen[%i]=%i statt 0\n", pos, staebchen[pos]);
     exit(1);
   }
+  staebchen[pos]++; // ergibt 1, gibt aber chance zur fehlererkennung
+}
 
-  while (1)
-  {
-    // zaehlt die gelesenen zeichen
-    counter++;
 
-    /*
-    // busy wait:
-    while (ringpuffer.schreib_index == ringpuffer.lese_index)
-    {
-      // do nothing
-    }
-    */
+void writer(long long_my_id) {
+  int my_id=long_my_id;
+  int nxt=(my_id+1)%5;
 
-    // Lesezugriff sperren
-    sem_p(reader_semaphore);
+  int i=100; // will so oft was essen
+  int links=0;  // welche staebchen habe ich gerade
+  int rechts=0;
+  while (i>0) {
+    // probiere zufaellig staebchen zu nehmen, die noch nicht da sind
+    if (!links && random()%10==7) links=staebchen_nehmen(my_id, my_id);
+    if (!rechts && random()%10==7) rechts=staebchen_nehmen(my_id, nxt);
 
-    sem_p(mutex_semaphore);
-    int n = ringpuffer.feld[ringpuffer.lese_index];
-    ringpuffer.lese_index = (ringpuffer.lese_index + 1) % SIZE;
-    sem_v(mutex_semaphore);
-
-    // Schreibzugriff wieder freigeben
-    sem_v(writer_semaphore);
-
-    // summiert gelesenen Zahlen fuer die Testausgabe
-    sum += n;
-
-    if (counter == writers * NUMBERS_CREATED_PER_WRITER)
-    {
-      return;
+    // wenn beide da sind: essen!
+    if (links && rechts) {
+      printf("%i futtert jetzt\n", my_id);
+      usleep(random()%200);
+      i--;
+      // staebchen wieder hinlegen
+      staebchen_weglegen(my_id, my_id); links=0;
+      staebchen_weglegen(my_id, nxt);   rechts=0;
     }
 
-    show_animation(0, my_id, counter);
+    // fuer die deadlock-erkennung melden, wenn ein staebchen von mir
+    // belegt ist (beide koennen hier nicht belegt sein, dann wurde gegessen)
+    have_one[my_id] = links || rechts;
+    if (have_one[0]+have_one[1]+have_one[2]+have_one[3]+have_one[4]==5) {
+      //printf("Deadlock!\n");
+      //exit(1);
+      printf("%i gibt freiwillig ab\n", my_id);
+      if (links) {
+        staebchen_weglegen(my_id, my_id); links=0;
+      }
+      if (rechts) {
+        staebchen_weglegen(my_id, nxt);   rechts=0;
+      }
+      have_one[my_id] = 0;
+    }
+
+    // denken
+    usleep(random()%200);
   }
 }
