@@ -1,0 +1,31 @@
+Der gegebene Ringpuffer-Code funktioniert unter bestimmten Umständen ohne Synchronisationsmechanismen. Hier sind die besonderen Umstände, unter denen das Programm fehlerfrei läuft:
+
+Es gibt nur einen Leser und einen Schreiber. Bei mehreren Schreibern oder Lesern würde es zu einer Überlappung kommen und das Programm würde nicht korrekt funktionieren.
+
+Der Ringpuffer hat eine feste Größe von SIZE, und die Schreib- und Leseindizes werden korrekt aktualisiert, um sicherzustellen, dass sie innerhalb des Bereichs des Puffers bleiben.
+
+Der Leser und der Schreiber verwenden einen sogenannten "Busy Wait" (auskommentierter Code), um auf die Verfügbarkeit des Puffers zu warten. Der Busy Wait ist ein ineffizienter Synchronisationsmechanismus, bei dem der Prozess aktiv auf eine Änderung wartet, indem er eine Schleife durchläuft, anstatt zu schlafen oder blockiert zu werden. In diesem Fall überprüfen der Leser und der Schreiber fortlaufend die Indizes des Ringpuffers, um festzustellen, ob Platz zum Schreiben bzw. Lesen vorhanden ist.
+
+Es ist wichtig zu beachten, dass der Busy Wait eine ineffiziente Methode ist und die Prozessorauslastung erhöht. In der Praxis sollte man Synchronisationsmechanismen wie Semaphoren verwenden, um den Zugriff auf den Ringpuffer zu regeln und Wartezeiten zu minimieren.
+
+Wenn jedoch mehrere Schreiber hinzugefügt werden, wird das Programm nicht mehr korrekt funktionieren, da es zu Überlappungen beim Schreiben in den Ringpuffer kommen kann. In diesem Fall müssen Semaphoren verwendet werden, um den Zugriff auf den Ringpuffer zu synchronisieren und sicherzustellen, dass immer nur ein Schreiber gleichzeitig schreibt.
+
+Dieser Code implementiert eine klassische Anwendung von Semaphoren und Multithreading: einen Producer-Consumer oder Reader-Writer mit einem Ringpuffer (Circular Buffer).
+
+Der Writer erzeugt Daten (in diesem Fall Zahlen), die im Ringpuffer gespeichert werden. Der Reader liest die Daten aus dem Puffer und verarbeitet sie (in diesem Fall addiert er sie zu einer Gesamtsumme).
+
+Die globalen Variablen sind `ringpuffer`, `counter` und `sum`. Die `ringpuffer`-Struktur ist der Ringpuffer selbst, und `counter` und `sum` sind Variablen, die verwendet werden, um die korrekte Ausführung des Programms zu überprüfen.
+
+Der Ringpuffer ist ein Array fester Größe (`SIZE`), in dem Daten gespeichert werden können. Die Indizes `lese_index` (Lesen) und `schreib_index` (Schreiben) geben an, wo der nächste Lese- bzw. Schreibvorgang stattfindet. Wenn `lese_index` und `schreib_index` gleich sind, ist der Puffer leer. 
+
+Die Semaphoren `writer_semaphore` und `reader_semaphore` werden zur Synchronisation zwischen dem Writer und dem Reader verwendet. Der Writer-Semaphor wird initialisiert, um sicherzustellen, dass zunächst nur ein Writer schreiben kann, und der Reader-Semaphor wird auf 0 initialisiert, um sicherzustellen, dass zunächst kein Reader lesen kann, da der Puffer leer ist.
+
+Die `writer()` Funktion schreibt Daten in den Ringpuffer. Wenn der Puffer voll ist (wenn das Hinzufügen eines Elements dazu führen würde, dass `schreib_index` gleich `lese_index` wird), dann wartet der Writer, bis Platz im Puffer frei ist. Der Writer nutzt den Semaphor, um sicherzustellen, dass zu einem gegebenen Zeitpunkt nur ein Writer in den Puffer schreiben kann.
+
+Die `reader()` Funktion liest Daten aus dem Ringpuffer. Wenn der Puffer leer ist (wenn `lese_index` gleich `schreib_index` ist), dann wartet der Reader, bis Daten verfügbar sind. Der Reader nutzt den Semaphor, um sicherzustellen, dass zu einem gegebenen Zeitpunkt nur ein Reader aus dem Puffer lesen kann.
+
+Die "Animation" zeigt den Fortschritt der Writer und des Readers.
+
+Die Testfunktionen (`test_setup()` und `test_end()`) initialisieren den Test und überprüfen das Ergebnis. Insbesondere überprüft `test_end()`, ob die Summe der gelesenen Zahlen der erwarteten Summe entspricht, was ein Indikator dafür ist, ob alle Zahlen korrekt vom Writer zum Reader übertragen wurden.
+
+Insgesamt stellt dieser Code ein gutes Beispiel für die Verwendung von Semaphoren zur Steuerung des Zugriffs auf gemeinsam genutzte Ressourcen in einem Multithreading-Kontext dar. Insbesondere zeigt er, wie Semaphoren verwendet werden können, um sicherzustellen, dass Writer und Reader nicht gleichzeitig auf den Ringpuffer zugreifen und dass der Reader nicht versucht, Daten aus einem leeren Puffer zu lesen, und der Writer nicht versucht, Daten in einen vollen Puffer zu schreiben.

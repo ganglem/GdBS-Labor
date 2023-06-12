@@ -1,0 +1,15 @@
+Dieser Code ist ein Beispiel für eine Multithreading-Anwendung, in der 10 "worker"-Threads (oder Prozesse) koordiniert arbeiten, um eine globale Variable ("global_var") bis zu einem großen Wert (A_BIG_NUMBER) zu erhöhen. Die Aufgabenstellung sieht vor, dass diese Koordination mithilfe von Semaphoren erreicht wird. Semaphoren sind eine gängige Technik in der Betriebssystemprogrammierung, um die Zugriffe auf gemeinsam genutzte Ressourcen zu synchronisieren und Koordination zwischen Threads oder Prozessen zu ermöglichen.
+
+In diesem Code gibt es 10 Semaphoren, jeweils eine für jeden worker-Thread. Jeder Thread arbeitet in der `writer`-Funktion und erhöht `global_var` um 1, wenn `global_var % 10` gleich seiner ID ist, und gibt dann den Semaphor für den nächsten Thread frei. Andernfalls blockiert er selbst, indem er den eigenen Semaphor mit `sem_p` aufruft.
+
+Am Ende, wenn `global_var` gleich A_BIG_NUMBER ist, werden alle Semaphoren freigegeben, um sicherzustellen, dass alle blockierten Threads wieder freigegeben werden.
+
+Es ist jedoch wichtig zu beachten, dass dieser Code einige Probleme hat:
+
+1. Der Code verwendet eine Funktion `sem_init`, die mit einem Argument aufgerufen wird, aber nach POSIX-Standard sollte `sem_init` mit drei Argumenten aufgerufen werden: einem Zeiger auf den Semaphor, einem Flag, ob der Semaphor zwischen Prozessen (1) oder nur zwischen Threads desselben Prozesses (0) geteilt werden soll, und dem anfänglichen Wert des Semaphors. 
+
+2. Die Funktionen `sem_p` und `sem_v` sind nicht standardmäßig in POSIX definiert, sie könnten jedoch synonym zu den POSIX-Funktionen `sem_wait` und `sem_post` sein, welche den Wert eines Semaphors dekrementieren bzw. inkrementieren.
+
+3. Der Code ist anfällig für Race Conditions, da die Überprüfung von `global_var % 10 != my_id` und die anschließende Änderung von `global_var` nicht atomar sind. Dies bedeutet, dass der Zustand von `global_var` sich zwischen diesen beiden Operationen ändern kann, wenn ein anderer Thread ausgeführt wird. Eine Möglichkeit, dies zu beheben, wäre, alle Zugriffe auf `global_var` in einer kritischen Sektion zu schützen, die durch einen weiteren Semaphor oder eine andere Art von Lock gesichert ist.
+
+4. Es gibt kein Mechanismus zur Beendigung der writer-Threads, sobald `global_var` den Wert A_BIG_NUMBER erreicht hat. Nachdem `global_var` A_BIG_NUMBER erreicht hat, wird der Code in einer Endlosschleife ausgeführt, in der ständig alle Semaphoren freigegeben werden. Eine Möglichkeit, dies zu beheben, wäre, eine Bedingung hinzuzufügen, um die Schleife zu beenden, sobald `global_var` A_BIG_NUMBER erreicht hat.

@@ -1,0 +1,16 @@
+Dieser Code ist eine Implementierung des klassischen Philosophenproblem (Dining Philosophers Problem). Dieses Problem ist ein Szenario in der Informatik, das bei der Entwicklung von Multithreading-Anwendungen oder Betriebssystemen auftritt. Es handelt sich um ein Problem der Synchronisation von Prozessen oder Threads.
+
+Die Grundidee des Philosophenproblems ist, dass fünf Philosophen an einem runden Tisch sitzen und jeder hat einen Teller mit Spaghetti vor sich. Zwischen jedem Teller liegt eine Gabel, also gibt es insgesamt fünf Gabeln. Jeder Philosoph führt abwechselnd zwei Aktivitäten aus: er denkt oder er isst. Um zu essen, benötigt ein Philosoph jedoch zwei Gabeln - die eine zu seiner linken und die andere zu seiner rechten Seite. Ein Philosoph kann also nur dann essen, wenn beide seiner Gabeln verfügbar sind.
+
+Die Herausforderung bei diesem Problem besteht darin, einen Algorithmus zu entwickeln, der verhindert, dass das System in einen Zustand gerät, in dem kein Philosoph mehr essen kann, weil jeder eine Gabel hält und auf die andere wartet - ein Zustand, der als Deadlock bezeichnet wird.
+
+Der vorliegende Code löst dieses Problem, indem er Zufälligkeit und Großzügigkeit einführt:
+
+- Zufälligkeit: Jeder Philosoph versucht zufällig, eine Gabel aufzunehmen, wenn er sie noch nicht hat. Dies reduziert die Wahrscheinlichkeit eines Deadlocks, da es weniger wahrscheinlich ist, dass alle Philosophen gleichzeitig versuchen, eine Gabel aufzuheben.
+- Großzügigkeit: Wenn ein Philosoph erkennt, dass alle fünf Gabeln besetzt sind (ein potenzieller Deadlock-Zustand), legt er seine Gabel(n) freiwillig ab, so dass andere Philosophen essen können.
+
+Die Funktion `staebchen_nehmen` versucht, eine Gabel aufzunehmen, und die Funktion `staebchen_weglegen` legt eine Gabel zurück. Die `writer` Funktion repräsentiert das Verhalten eines Philosophen, der zwischen dem Denken (hier repräsentiert durch einen `usleep` Aufruf) und dem Essen wechselt. 
+
+Der Code verwendet das volatile Keyword für die globalen Variablen, um zu gewährleisten, dass die Werte immer direkt aus dem Speicher gelesen und nicht zwischengespeichert werden, was in einem Multithreading-Umfeld wichtig ist.
+
+Zum jetzigen Zeitpunkt verwendet der Code keine Semaphoren zur Synchronisation, obwohl die Aufgabenstellung das verlangt. Eine Möglichkeit, Semaphoren in diesem Code zu verwenden, wäre, für jede Gabel einen Semaphor zu erstellen. Ein Philosoph könnte dann versuchen, die Semaphoren für beide seiner Gabeln zu erlangen, bevor er zu essen beginnt, und sie freigeben, wenn er fertig ist. Dies würde sicherstellen, dass zu einem bestimmten Zeitpunkt nur ein Philosoph eine bestimmte Gabel hält.
