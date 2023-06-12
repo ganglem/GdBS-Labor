@@ -11,6 +11,7 @@
 
 semaphore writer_semaphore;
 semaphore reader_semaphore;
+semaphore mutex_semaphore;
 
 //----------- animation (nicht aufgabenrelevant) ----------------------------
 
@@ -84,6 +85,7 @@ void test_setup(void)
 
   writer_semaphore = sem_init(1);
   reader_semaphore = sem_init(0);
+  mutex_semaphore = sem_init(1);
 
   // zur Fehlererkennung
   sum = 0;
@@ -135,9 +137,11 @@ void writer(long my_id)
     // Schreibzugriff für andere Writer sperren
     sem_p(writer_semaphore);
 
+    sem_p(mutex_semaphore);
     ringpuffer.feld[ringpuffer.schreib_index] = i;
     ringpuffer.schreib_index = (ringpuffer.schreib_index + 1) % SIZE;
-
+    sem_v(mutex_semaphore);
+    
     // Lesezugriff für den Reader freigeben
     sem_v(reader_semaphore);
 
@@ -170,8 +174,10 @@ void reader(long my_id)
     // Lesezugriff sperren
     sem_p(reader_semaphore);
 
+    sem_p(mutex_semaphore);
     int n = ringpuffer.feld[ringpuffer.lese_index];
     ringpuffer.lese_index = (ringpuffer.lese_index + 1) % SIZE;
+    sem_v(mutex_semaphore);
 
     // Schreibzugriff wieder freigeben
     sem_v(writer_semaphore);
